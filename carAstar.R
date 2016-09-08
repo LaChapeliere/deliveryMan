@@ -1,28 +1,62 @@
+manhattanDistance <- function(A, B) {
+  #Computes the manhattan distance between A and B
+  #A and B each needs to be a list and have a 'x' and a 'y' coordinate members
+  return(abs(A['x'] - B['x']) + abs(A['y'] - B['y']))
+}
+
+nextMoveVerticalThenHorizontal <- function(car, goal) {
+  if (goal['y'] < car['y']) {
+    nextMove = 2
+  }
+  else if (goal['y'] > car['y']) {
+    nextMove = 8
+  }
+  else {
+    if (goal['x'] < car['x']) {
+      nextMove = 4
+    }
+    else if (goal['x'] > car['x']) {
+      nextMove = 6
+    }
+    else {
+      nextMove = 5
+    }
+  }
+  
+  return(nextMove)
+}
+
 getNextPackageOrDelivery <- function(car, deliveries) {
   #Check if the car has a package loaded
   #If yes, the goal is the package's delivery point
-  #If not, the goal is the next unpicked package in the list
+  #If not, the goal is the closest unpicked package
   
   goal = c(x = 0, y = 0)
   
   if (car['load'] > 0) {
     #package loaded
     package = car[['load']]
-    print(package)
-    print(deliveries)
     goal["x"] = deliveries[package,3]
     goal["y"] = deliveries[package,4]
   }
   else {
-    #Look for the next unpicked package in the deliveries list
-    for (i in 1:length(deliveries)) {
+    #Look for the closest unpicked package in the deliveries list
+    closestDistance = 20
+    closest = 0
+    for (i in 1:nrow(deliveries)) {
       if (deliveries[i,5] == 0) {
         #If the package has not been picked up yet
-        goal["x"] = deliveries[i,1]
-        goal["y"] = deliveries[i,2]
-        break
+        carCoord = c(x = car[['x']],y = car[['y']])
+        pickup = c(x = deliveries[i,1], y = deliveries[i,2])
+        distance = manhattanDistance(carCoord, pickup)
+        if (distance < closestDistance) {
+          closestDistance = distance
+          closest = i
+        }
       }
     }
+    goal["x"] = deliveries[closest,1]
+    goal["y"] = deliveries[closest,2]
   }
   
   #return a list of coordinates to the goal 
@@ -57,29 +91,11 @@ carAstar <- function(traffic, car, deliveries) {
   # possibleOutputs
   # car['nextMove'] = sample(possibleOutputs, 1)
   # car['nextMove']
-  
-  #Next package, first vertical than horizontal
+
+  #Closest package, first vertical than horizontal
   #Choose next package or delivery
   goal = getNextPackageOrDelivery(car, deliveries)
-  if (goal['y'] < car['y']) {
-    nextMove = 2
-  }
-  else if (goal['y'] > car['y']) {
-    nextMove = 8
-  }
-  else {
-    if (goal['x'] < car['x']) {
-      nextMove = 4
-    }
-    else if (goal['x'] > car['x']) {
-      nextMove = 6
-    }
-    else {
-      nextMove = 5
-    }
-  }
-  car['nextMove'] = nextMove
-  
+  car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
   
   return(car)
 }
