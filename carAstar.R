@@ -63,8 +63,112 @@ getNextPackageOrDelivery <- function(car, deliveries) {
   return(goal)
 }
 
+computeAStarScore <- function(traffic, parent, child, goal) {
+  #First computes the heuristic (manhattan distance) of the child
+  heuri = manhattanDistance(child, goal)
+  
+  #Then finds the cost ot the movement from the parent to the child
+  cost = 0
+  if (parent['x'] == child['x']) {
+    #vertical movement
+    cost = traffic['vroads'][parent['x'], min(parent['y'], child['y'])]
+  }
+  else if (parent['y'] == child['y']) {
+    #horizontal movement
+    cost = traffic['hroads'][min(parent['x'], child['x']), parent['y']]
+  }
+  else {
+    print("IMPOSSIBLEEEEEE")
+  }
+  
+  return(heuri + cost)
+}
 
+addNeighboursToFrontier <- function(traffic, current, history) {
+  #For each possible neighbour of current
+  for (x in c((current['x'] - 1),(current['x'] + 1))) {
+    for (y in c((current['y'] - 1),(current['y'] + 1))) {
+      # -check if it exists
+      if (x < 1 || x > 10 || y < 1 || y > 10) {
+        #If doesn't exist, next
+        next()
+      }
+      
+      path = current['path']
+      path[length(path)+1] <- c(x = current['x'])
+      path[length(path)+1] <- c(y = current['y'])
+      # -check if it has been visited
+      if (history[x,y][['score']] == 0) {
+        #If the node has never been visited, add it to the frontier
+        neighbour = c(x = x, y = y, path = path, score = 0)
+        neighbour['score'] = computeAStarScore(traffic, current, neighbour, goal)
+        history[x, y] = neighbour
+      }
+      else if (history[x,y][['score']] == -1) {
+        #If the node has already been explored, go to the next neighbour
+        next()
+      }
+      else {
+        #If the node is already in the frontier,
+        #only replace the current occurence of the node if
+        #the new score is better
+        currentScore = history[x,y]['score']
+        neighbour = c(x = x, y = y, path = path, score = 0)
+        newScore = computeAStarScore(traffic, current, neighbour, goal)
+        if (newScore > currentScore) {
+          history[x,y]['score'] = newScore
+        }
+      }
+    }
+  }
+  
+  return(history)
+}
 
+aStarMain <- function(traffic, car, goal) {
+  #We initialize current with the car position
+  current = c(x = 0, y = 0, path = c(), score = 0)
+  current['x'] = car[['x']]
+  current['y'] = car[['y']]
+  current['score'] = manhattanDistance(current, goal)
+  
+  #Matrix representing the grid, every node is a list with 'x', 'y', 'path', and 'score' members
+  #score has value 0 if not visited, -1 if explored
+  #If the node is in the frontier, its value is its corresponding score
+  history = matrix(nrow = 10, ncol = 10)
+  for (i in 1:nrow(history)) {
+    for (j in 1:ncol(history)) {
+      history[i,j] = c(x = i, y = j, path = c(), score = 0)
+    }
+  }
+  
+  #While we have not reached the goal
+  while(current['x'] != goal['x'] || current['y'] != goal['y']) {
+    #We add unvisited neighbours of current to the frontier
+    history = addNeighboursToFrontier(traffic, current, history)
+    
+    #We set the current node score to -1
+    history[current['x'], current['y']]['score'] = -1
+    
+    #We look for the lowest score to choose the next node to explore
+    bestScore = 2000
+    bestNode = c()
+    for (i in 1:nrow(history)) {
+      for (j in 1:ncol(history)) {
+        if (history[i,j]['score'] > 0) {
+          #The node is in the frontier
+          if (history[i,j]['score'] < bestScore) {
+            bestScore = history[i,j]['score']
+            bestNode = history[i,j]
+          }
+        }
+      }
+    }
+    
+    #Set current to the best node in the frontier
+    current = bestNode
+  }
+}
 
 
 carAstar <- function(traffic, car, deliveries) {
@@ -94,8 +198,12 @@ carAstar <- function(traffic, car, deliveries) {
 
   #Closest package, first vertical than horizontal
   #Choose next package or delivery
+  # goal = getNextPackageOrDelivery(car, deliveries)
+  # car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
+  
+  #Closest package + AStar
   goal = getNextPackageOrDelivery(car, deliveries)
-  car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
+  car['nextMove'] = aStarMain(traffic, car, goal)
   
   return(car)
 }
