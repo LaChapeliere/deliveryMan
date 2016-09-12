@@ -26,18 +26,30 @@ nextMoveVerticalThenHorizontal <- function(car, goal) {
   return(nextMove)
 }
 
-nextMove <- function(car, nextCar) {
-  if (nextCar['y'] < car['y']) {
+nextMove <- function(car, history, goal) {
+  neighbourX = goal['x']
+  neighbourY = goal['y']
+  parentX = history[['parentXs']][neighbourX, neighbourY]
+  parentY = history[['parentYs']][neighbourX, neighbourY]
+  
+  while(parentX != car[['x']] || parentY != car[['y']]) {
+    neighbourX = parentX
+    neighbourY = parentY
+    parentX = history[['parentXs']][neighbourX, neighbourY]
+    parentY = history[['parentYs']][neighbourX, neighbourY]
+  }
+  
+  if (neighbourY < car['y']) {
     nextMove = 2
   }
-  else if (nextCar['y'] > car['y']) {
+  else if (neighbourY > car['y']) {
     nextMove = 8
   }
   else {
-    if (nextCar['x'] < car['x']) {
+    if (neighbourX < car['x']) {
       nextMove = 4
     }
-    else if (nextCar['x'] > car['x']) {
+    else if (neighbourX > car['x']) {
       nextMove = 6
     }
     else {
@@ -87,7 +99,6 @@ getNextPackageOrDelivery <- function(car, deliveries) {
 
 computeAStarScore <- function(traffic, parent, child, goal) {
   #First computes the heuristic (manhattan distance) of the child
-  #parent and child are lists
   heuri = manhattanDistance(child, goal)
   #Then finds the cost ot the movement from the parent to the child
   cost = 0
@@ -97,6 +108,8 @@ computeAStarScore <- function(traffic, parent, child, goal) {
   }
   else if (parent['y'] == child['y']) {
     #horizontal movement
+    print(parent)
+    print(child['x'])
     cost = traffic[['hroads']][min(parent['x'], child['x']), parent['y']]
   }
   else {
@@ -123,7 +136,7 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
 
       # -check if it has been visited
       if (history[['scores']][x,y] == 0) {
-        print("Never visited")
+        #print("Never visited")
         #If the node has never been visited, add it to the frontier
         neighbour = c(x = x, y = y)
         history[['scores']][x,y] = computeAStarScore(traffic, current, neighbour, goal)
@@ -131,12 +144,12 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
         history[['parentYs']][x,y] = current['y']
       }
       else if (history[['scores']][x,y] == -1) {
-        print("Already visited")
+        #print("Already visited")
         #If the node has already been explored, go to the next neighbour
         next()
       }
       else {
-        print("Already in frontier")
+        #print("Already in frontier")
         #If the node is already in the frontier,
         #only replace the current occurence of the node if
         #the new score is better
@@ -145,6 +158,8 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
         newScore = computeAStarScore(traffic, current, neighbour, goal)
         if (newScore > currentScore) {
           history[['scores']][x,y] = newScore
+          history[['parentXs']][x,y] = current['x']
+          history[['parentYs']][x,y] = current['y']
         }
       }
     }
@@ -155,7 +170,7 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
 
 aStarMain <- function(traffic, car, goal) {
   #We initialize current with the car position
-  current = c(x = 0, y = 0, parentX = 0, parentY = 0, score = 0)
+  current = c(x = 0, y = 0)
   current['x'] = car[['x']]
   current['y'] = car[['y']]
   current['score'] = manhattanDistance(current, goal)
@@ -199,12 +214,11 @@ aStarMain <- function(traffic, car, goal) {
         }
       }
     }
-    print(bestNode)
     #Set current to the best node in the frontier
     current = bestNode
   }
   
-  return(nextMove(car, current))
+  return(nextMove(car, history, goal))
 }
 
 
