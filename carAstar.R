@@ -66,19 +66,20 @@ getNextPackageOrDelivery <- function(car, deliveries) {
 computeAStarScore <- function(traffic, parent, child, goal) {
   #First computes the heuristic (manhattan distance) of the child
   #parent and child are lists
-  childCoord = c(child[['x']], child[['y']])
-  print("TEST")
-  heuri = manhattanDistance(childCoord, goal)
-  
+  heuri = manhattanDistance(child, goal)
+  print(parent['x'])
+  print(parent['y'])
+  print(child['x'])
+  print(child['y'])
   #Then finds the cost ot the movement from the parent to the child
   cost = 0
-  if (parent[['x']] == child[['x']]) {
+  if (parent['x'] == child['x']) {
     #vertical movement
-    cost = traffic['vroads'][parent[['x']], min(parent[['y']], child[['y']])]
+    cost = traffic['vroads'][parent['x'], min(parent['y'], child['y'])]
   }
-  else if (parent[['y']] == child[['y']]) {
+  else if (parent['y'] == child['y']) {
     #horizontal movement
-    cost = traffic['hroads'][min(parent[['x']], child[['x']]), parent[['y']]]
+    cost = traffic['hroads'][min(parent['x'], child['x']), parent['y']]
   }
   else {
     print("IMPOSSIBLEEEEEE")
@@ -87,27 +88,25 @@ computeAStarScore <- function(traffic, parent, child, goal) {
   return(heuri + cost)
 }
 
-addNeighboursToFrontier <- function(traffic, current, history) {
+addNeighboursToFrontier <- function(traffic, current, history, goal) {
   #For each possible neighbour of current
-  for (x in c((current[['x']] - 1),(current[['x']] + 1))) {
-    for (y in c((current[['y']] - 1),(current[['y']] + 1))) {
+  for (x in c((current['x'] - 1),(current['x'] + 1))) {
+    for (y in c((current['y'] - 1),(current['y'] + 1))) {
       # -check if it exists
       if (x < 1 || x > 10 || y < 1 || y > 10) {
         #If doesn't exist, next
         next()
       }
-      
-      path = current[['path']]
-      path[length(path)+1] <- c(x = current[['x']])
-      path[length(path)+1] <- c(y = current[['y']])
+
       # -check if it has been visited
-      if (history[x,y][['score']] == 0) {
+      if (history[['scores']][x,y] == 0) {
         #If the node has never been visited, add it to the frontier
-        neighbour = list(x = x, y = y, path = path, score = 0)
-        neighbour[['score']] = computeAStarScore(traffic, current, neighbour, goal)
-        history[x, y] = neighbour
+        neighbour = c(x = x, y = y)
+        history[['scores']][x,y] = computeAStarScore(traffic, current, neighbour, goal)
+        history[['parentXs']][x,y] = current['x']
+        history[['parentYs']][x,y] = current['y']
       }
-      else if (history[x,y][['score']] == -1) {
+      else if (history[['scores']][x,y] == -1) {
         #If the node has already been explored, go to the next neighbour
         next()
       }
@@ -115,11 +114,11 @@ addNeighboursToFrontier <- function(traffic, current, history) {
         #If the node is already in the frontier,
         #only replace the current occurence of the node if
         #the new score is better
-        currentScore = history[x,y][['score']]
-        neighbour = list(x = x, y = y, path = path, score = 0)
+        currentScore = history[['scores']][x,y]
+        neighbour = c(x = x, y = y)
         newScore = computeAStarScore(traffic, current, neighbour, goal)
         if (newScore > currentScore) {
-          history[x,y][['score']] = newScore
+          history[['scores']][x,y] = newScore
         }
       }
     }
@@ -130,40 +129,45 @@ addNeighboursToFrontier <- function(traffic, current, history) {
 
 aStarMain <- function(traffic, car, goal) {
   #We initialize current with the car position
-  current = list(x = 0, y = 0, path = c(), score = 0)
-  current[['x']] = car[['x']]
-  current[['y']] = car[['y']]
-  currentCoord = c(current[['x']], current[['y']])
-  current[['score']] = manhattanDistance(currentCoord, goal)
+  current = c(x = 0, y = 0, parentX = 0, parentY = 0, score = 0)
+  current['x'] = car[['x']]
+  current['y'] = car[['y']]
+  current['score'] = manhattanDistance(current, goal)
   
-  #Matrix representing the grid, every node is a list with 'x', 'y', 'path', and 'score' members
+  #Matrices representing the grid, score matrix, parentX matrix and parentY matrix
   #score has value 0 if not visited, -1 if explored
   #If the node is in the frontier, its value is its corresponding score
-  history = matrix(nrow = 10, ncol = 10)
-  for (i in 1:nrow(history)) {
-    for (j in 1:ncol(history)) {
-      history[i,j] = list(x = i, y = j, path = c(), score = 0)
+  scores = matrix(nrow = 10, ncol = 10)
+  parentXs = matrix(nrow = 10, ncol = 10)
+  parentYs = matrix(nrow = 10, ncol = 10)
+  
+  for (i in 1:nrow(scores)) {
+    for (j in 1:ncol(scores)) {
+      scores[i,j] = 0
+      parentXs[i,j] = 0
+      parentYs[i,j] = 0
     }
   }
+  history = list(scores = scores, parentXs = parentXs, parentYx = parentYs)
   
   #While we have not reached the goal
-  while(current[['x']] != goal['x'] || current[['y']] != goal['y']) {
+  while(current['x'] != goal['x'] || current['y'] != goal['y']) {
     #We add unvisited neighbours of current to the frontier
-    history = addNeighboursToFrontier(traffic, current, history)
+    history = addNeighboursToFrontier(traffic, current, history, goal)
     
     #We set the current node score to -1
-    history[current[['x']], current[['y']]][['score']] = -1
+    history[['scores']][current['x'], current['y']] = -1
     
     #We look for the lowest score to choose the next node to explore
     bestScore = 2000
     bestNode = list()
-    for (i in 1:nrow(history)) {
-      for (j in 1:ncol(history)) {
-        if (history[i,j][['score']] > 0) {
+    for (i in 1:nrow(history['scores'])) {
+      for (j in 1:ncol(history['scores'])) {
+        if (history[['scores']][i,j] > 0) {
           #The node is in the frontier
-          if (history[i,j][['score']] < bestScore) {
-            bestScore = history[i,j][['score']]
-            bestNode = history[i,j]
+          if (history[['scores']][i,j] < bestScore) {
+            bestScore = history[['scores']][i,j]
+            bestNode = c(x = i, y = j, parentX = history[['parentXs']][i,j], parentY = history[['parentYs']][i,j], score = bestScore)
           }
         }
       }
