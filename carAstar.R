@@ -75,6 +75,7 @@ computeAStarScore <- function(traffic, parent, child, goal) {
   cost = 0
   if (parent['x'] == child['x']) {
     #vertical movement
+    print(traffic)
     cost = traffic['vroads'][parent['x'], min(parent['y'], child['y'])]
   }
   else if (parent['y'] == child['y']) {
@@ -90,8 +91,8 @@ computeAStarScore <- function(traffic, parent, child, goal) {
 
 addNeighboursToFrontier <- function(traffic, current, history, goal) {
   #For each possible neighbour of current
-  for (x in c((current['x'] - 1),(current['x'] + 1))) {
-    for (y in c((current['y'] - 1),(current['y'] + 1))) {
+  for (x in (current['x'] - 1):(current['x'] + 1)) {
+    for (y in (current['y'] - 1):(current['y'] + 1)) {
       # -check it's a neighbour (and not a diagonal neighbour)
       if (x != current['x'] && y != current['y']) {
         next()
@@ -105,6 +106,7 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
 
       # -check if it has been visited
       if (history[['scores']][x,y] == 0) {
+        print("Never visited")
         #If the node has never been visited, add it to the frontier
         neighbour = c(x = x, y = y)
         history[['scores']][x,y] = computeAStarScore(traffic, current, neighbour, goal)
@@ -112,10 +114,12 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
         history[['parentYs']][x,y] = current['y']
       }
       else if (history[['scores']][x,y] == -1) {
+        print("Already visited")
         #If the node has already been explored, go to the next neighbour
         next()
       }
       else {
+        print("Already in frontier")
         #If the node is already in the frontier,
         #only replace the current occurence of the node if
         #the new score is better
@@ -154,18 +158,20 @@ aStarMain <- function(traffic, car, goal) {
     }
   }
   history = list(scores = scores, parentXs = parentXs, parentYx = parentYs)
-  
+
   #While we have not reached the goal
   while(current['x'] != goal['x'] || current['y'] != goal['y']) {
+
     #We add unvisited neighbours of current to the frontier
     history = addNeighboursToFrontier(traffic, current, history, goal)
+    print(history[['scores']])
     
     #We set the current node score to -1
     history[['scores']][current['x'], current['y']] = -1
     
     #We look for the lowest score to choose the next node to explore
     bestScore = 2000
-    bestNode = list()
+    bestNode = c()
     for (i in 1:nrow(history[['scores']])) {
       for (j in 1:ncol(history[['scores']])) {
         if (history[['scores']][i,j] > 0) {
@@ -177,7 +183,7 @@ aStarMain <- function(traffic, car, goal) {
         }
       }
     }
-    
+    print(bestNode)
     #Set current to the best node in the frontier
     current = bestNode
   }
