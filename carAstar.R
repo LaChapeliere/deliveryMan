@@ -66,7 +66,9 @@ getNextPackageOrDelivery <- function(car, deliveries) {
 computeAStarScore <- function(traffic, parent, child, goal) {
   #First computes the heuristic (manhattan distance) of the child
   #parent and child are lists
-  heuri = manhattanDistance(child, goal)
+  childCoord = c(child[['x']], child[['y']])
+  print("TEST")
+  heuri = manhattanDistance(childCoord, goal)
   
   #Then finds the cost ot the movement from the parent to the child
   cost = 0
@@ -131,7 +133,8 @@ aStarMain <- function(traffic, car, goal) {
   current = list(x = 0, y = 0, path = c(), score = 0)
   current[['x']] = car[['x']]
   current[['y']] = car[['y']]
-  current[['score']] = manhattanDistance(current, goal)
+  currentCoord = c(current[['x']], current[['y']])
+  current[['score']] = manhattanDistance(currentCoord, goal)
   
   #Matrix representing the grid, every node is a list with 'x', 'y', 'path', and 'score' members
   #score has value 0 if not visited, -1 if explored
