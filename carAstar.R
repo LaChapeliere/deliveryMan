@@ -26,6 +26,28 @@ nextMoveVerticalThenHorizontal <- function(car, goal) {
   return(nextMove)
 }
 
+nextMove <- function(car, nextCar) {
+  if (nextCar['y'] < car['y']) {
+    nextMove = 2
+  }
+  else if (nextCar['y'] > car['y']) {
+    nextMove = 8
+  }
+  else {
+    if (nextCar['x'] < car['x']) {
+      nextMove = 4
+    }
+    else if (nextCar['x'] > car['x']) {
+      nextMove = 6
+    }
+    else {
+      nextMove = 5
+    }
+  }
+  
+  return(nextMove)
+}
+
 getNextPackageOrDelivery <- function(car, deliveries) {
   #Check if the car has a package loaded
   #If yes, the goal is the package's delivery point
@@ -67,20 +89,15 @@ computeAStarScore <- function(traffic, parent, child, goal) {
   #First computes the heuristic (manhattan distance) of the child
   #parent and child are lists
   heuri = manhattanDistance(child, goal)
-  print(parent['x'])
-  print(parent['y'])
-  print(child['x'])
-  print(child['y'])
   #Then finds the cost ot the movement from the parent to the child
   cost = 0
   if (parent['x'] == child['x']) {
     #vertical movement
-    print(traffic)
-    cost = traffic['vroads'][parent['x'], min(parent['y'], child['y'])]
+    cost = traffic[['vroads']][parent['x'], min(parent['y'], child['y'])]
   }
   else if (parent['y'] == child['y']) {
     #horizontal movement
-    cost = traffic['hroads'][min(parent['x'], child['x']), parent['y']]
+    cost = traffic[['hroads']][min(parent['x'], child['x']), parent['y']]
   }
   else {
     print("IMPOSSIBLEEEEEE")
@@ -157,14 +174,13 @@ aStarMain <- function(traffic, car, goal) {
       parentYs[i,j] = 0
     }
   }
-  history = list(scores = scores, parentXs = parentXs, parentYx = parentYs)
+  history = list(scores = scores, parentXs = parentXs, parentYs = parentYs)
 
   #While we have not reached the goal
   while(current['x'] != goal['x'] || current['y'] != goal['y']) {
 
     #We add unvisited neighbours of current to the frontier
     history = addNeighboursToFrontier(traffic, current, history, goal)
-    print(history[['scores']])
     
     #We set the current node score to -1
     history[['scores']][current['x'], current['y']] = -1
@@ -187,6 +203,8 @@ aStarMain <- function(traffic, car, goal) {
     #Set current to the best node in the frontier
     current = bestNode
   }
+  
+  return(nextMove(car, current))
 }
 
 
