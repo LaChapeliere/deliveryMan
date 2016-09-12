@@ -92,6 +92,11 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
   #For each possible neighbour of current
   for (x in c((current['x'] - 1),(current['x'] + 1))) {
     for (y in c((current['y'] - 1),(current['y'] + 1))) {
+      # -check it's a neighbour (and not a diagonal neighbour)
+      if (x != current['x'] && y != current['y']) {
+        next()
+      }
+      
       # -check if it exists
       if (x < 1 || x > 10 || y < 1 || y > 10) {
         #If doesn't exist, next
@@ -161,8 +166,8 @@ aStarMain <- function(traffic, car, goal) {
     #We look for the lowest score to choose the next node to explore
     bestScore = 2000
     bestNode = list()
-    for (i in 1:nrow(history['scores'])) {
-      for (j in 1:ncol(history['scores'])) {
+    for (i in 1:nrow(history[['scores']])) {
+      for (j in 1:ncol(history[['scores']])) {
         if (history[['scores']][i,j] > 0) {
           #The node is in the frontier
           if (history[['scores']][i,j] < bestScore) {
