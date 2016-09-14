@@ -104,13 +104,11 @@ computeAStarScore <- function(traffic, parent, child, goal) {
   cost = 0
   if (parent['x'] == child['x']) {
     #vertical movement
-    cost = traffic[['vroads']][parent['x'], min(parent['y'], child['y'])]
+    cost = traffic[['vroads']][min(parent['y'], child['y']), parent['x']]
   }
   else if (parent['y'] == child['y']) {
     #horizontal movement
-    #print(parent)
-    #print(child['x'])
-    cost = traffic[['hroads']][min(parent['x'], child['x']), parent['y']]
+    cost = traffic[['hroads']][parent['y'], min(parent['x'], child['x'])]
   }
   else {
     print("IMPOSSIBLEEEEEE")
