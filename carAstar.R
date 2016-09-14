@@ -108,8 +108,8 @@ computeAStarScore <- function(traffic, parent, child, goal) {
   }
   else if (parent['y'] == child['y']) {
     #horizontal movement
-    print(parent)
-    print(child['x'])
+    #print(parent)
+    #print(child['x'])
     cost = traffic[['hroads']][min(parent['x'], child['x']), parent['y']]
   }
   else {
@@ -123,6 +123,11 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
   #For each possible neighbour of current
   for (x in (current['x'] - 1):(current['x'] + 1)) {
     for (y in (current['y'] - 1):(current['y'] + 1)) {
+      # -check it's not the node itself
+      if (x == current['x'] && y == current['y']) {
+        next()
+      }
+      
       # -check it's a neighbour (and not a diagonal neighbour)
       if (x != current['x'] && y != current['y']) {
         next()
