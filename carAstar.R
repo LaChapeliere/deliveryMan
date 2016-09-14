@@ -75,7 +75,7 @@ getNextPackageOrDelivery <- function(car, deliveries, size) {
   }
   else {
     #Look for the closest unpicked package in the deliveries list
-    closestDistance = 20
+    closestDistance = size * 2
     closest = 0
     for (i in 1:nrow(deliveries)) {
       if (deliveries[i,5] == 0) {
