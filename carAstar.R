@@ -60,7 +60,7 @@ nextMove <- function(car, history, goal) {
   return(nextMove)
 }
 
-getNextPackageOrDelivery <- function(car, deliveries) {
+getNextPackageOrDelivery <- function(car, deliveries, size) {
   #Check if the car has a package loaded
   #If yes, the goal is the package's delivery point
   #If not, the goal is the closest unpicked package
@@ -118,6 +118,8 @@ computeAStarScore <- function(traffic, parent, child, goal) {
 }
 
 addNeighboursToFrontier <- function(traffic, current, history, goal) {
+  size = ncol(traffic[['vroads']])
+  
   #For each possible neighbour of current
   for (x in (current['x'] - 1):(current['x'] + 1)) {
     for (y in (current['y'] - 1):(current['y'] + 1)) {
@@ -132,7 +134,7 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
       }
       
       # -check if it exists
-      if (x < 1 || x > 10 || y < 1 || y > 10) {
+      if (x < 1 || x > size || y < 1 || y > size) {
         #If doesn't exist, next
         next()
       }
@@ -172,6 +174,8 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
 }
 
 aStarMain <- function(traffic, car, goal) {
+  size = ncol(traffic[['vroads']])
+  
   #We initialize current with the car position
   current = c(x = 0, y = 0)
   current['x'] = car[['x']]
@@ -181,9 +185,9 @@ aStarMain <- function(traffic, car, goal) {
   #Matrices representing the grid, score matrix, parentX matrix and parentY matrix
   #score has value 0 if not visited, -1 if explored
   #If the node is in the frontier, its value is its corresponding score
-  scores = matrix(nrow = 10, ncol = 10)
-  parentXs = matrix(nrow = 10, ncol = 10)
-  parentYs = matrix(nrow = 10, ncol = 10)
+  scores = matrix(nrow = size, ncol = size)
+  parentXs = matrix(nrow = size, ncol = size)
+  parentYs = matrix(nrow = size, ncol = size)
   
   for (i in 1:nrow(scores)) {
     for (j in 1:ncol(scores)) {
@@ -204,7 +208,7 @@ aStarMain <- function(traffic, car, goal) {
     history[['scores']][current['x'], current['y']] = -1
     
     #We look for the lowest score to choose the next node to explore
-    bestScore = 2000
+    bestScore = size * size * 1000
     bestNode = c()
     for (i in 1:nrow(history[['scores']])) {
       for (j in 1:ncol(history[['scores']])) {
@@ -256,7 +260,7 @@ carAstar <- function(traffic, car, deliveries) {
   # car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
   
   #Closest package + AStar
-  goal = getNextPackageOrDelivery(car, deliveries)
+  goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
   car['nextMove'] = aStarMain(traffic, car, goal)
   
   return(car)
