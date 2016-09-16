@@ -1,0 +1,5 @@
+For the choice of the next package:
+	-taking into account the delivery point?
+	-calculating the next package to pick-up at every turn?
+	-taking the manhattan distance as the cost from one node to another, make a layered directed graph with the pick-ups/delivery nodes, which pick-up having edges incoming from all the delivery points and only one outgoing edge (to its corresponding delivery point). Source has the current distance to each pick-up point. Well only accessible when all pickups and deliveries have been visited
+	-
