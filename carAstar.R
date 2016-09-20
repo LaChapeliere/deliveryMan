@@ -32,12 +32,16 @@ nextMove <- function(car, history, goal) {
   parentX = history[['parentXs']][neighbourX, neighbourY]
   parentY = history[['parentYs']][neighbourX, neighbourY]
   
-  while(parentX != car[['x']] || parentY != car[['y']]) {
-    neighbourX = parentX
-    neighbourY = parentY
-    parentX = history[['parentXs']][neighbourX, neighbourY]
-    parentY = history[['parentYs']][neighbourX, neighbourY]
-  }
+  if(goal['x'] == car['x'] && goal['y'] == car['y']){
+    nextMove = 5
+  }else(
+    while(parentX != car[['x']] || parentY != car[['y']]) {
+      neighbourX = parentX
+      neighbourY = parentY
+      parentX = history[['parentXs']][neighbourX, neighbourY]
+      parentY = history[['parentYs']][neighbourX, neighbourY]
+    }
+  )
   
   if (neighbourY < car['y']) {
     nextMove = 2
@@ -83,7 +87,7 @@ getNextPackageOrDelivery <- function(car, deliveries, size) {
         carCoord = c(x = car[['x']],y = car[['y']])
         pickup = c(x = deliveries[i,1], y = deliveries[i,2])
         distance = manhattanDistance(carCoord, pickup)
-        if (distance < closestDistance) {
+        if (distance <= closestDistance) {
           closestDistance = distance
           closest = i
         }
@@ -138,7 +142,7 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
         #If doesn't exist, next
         next()
       }
-
+      
       # -check if it has been visited
       if (history[['scores']][x,y] == 0) {
         #print("Never visited")
@@ -197,10 +201,10 @@ aStarMain <- function(traffic, car, goal) {
     }
   }
   history = list(scores = scores, parentXs = parentXs, parentYs = parentYs)
-
+  
   #While we have not reached the goal
   while(current['x'] != goal['x'] || current['y'] != goal['y']) {
-
+    
     #We add unvisited neighbours of current to the frontier
     history = addNeighboursToFrontier(traffic, current, history, goal)
     
@@ -253,7 +257,7 @@ carAstar <- function(traffic, car, deliveries) {
   # possibleOutputs
   # car['nextMove'] = sample(possibleOutputs, 1)
   # car['nextMove']
-
+  
   #Closest package, first vertical than horizontal
   #Choose next package or delivery
   # goal = getNextPackageOrDelivery(car, deliveries)
