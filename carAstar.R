@@ -64,6 +64,64 @@ nextMove <- function(car, history, goal) {
   return(nextMove)
 }
 
+getNextPackageOrDeliveryClosestNextPickup <- function(car, deliveries, size) {
+  #Check if the car has a package loaded
+  #If yes, the goal is the package's delivery point
+  #If not, the goal is the unpicked package with the smallest sum of
+  #distance from the car to it
+  #and distance from its delivery point and the unpicked package closest to this delivery point.
+  
+  #weight to give priority to one distance over the other
+  #1 means only the first distance is taken into account
+  #0 means only the second one is taken into account
+  weight = 0.3
+  
+  goal = c(x = 0, y = 0)
+  
+  if (car['load'] > 0) {
+    #package loaded
+    package = car[['load']]
+    goal["x"] = deliveries[package,3]
+    goal["y"] = deliveries[package,4]
+  }
+  else {
+    #For each unpicked package, compute the distance between it and the car
+    closestDistance = size * 4
+    closest = 0
+    carCoord = c(x = car[['x']],y = car[['y']])
+    for (i in 1:nrow(deliveries)) {
+      if (deliveries[i,5] == 0) {
+        #If the package has not been picked up yet
+        pickup = c(x = deliveries[i,1], y = deliveries[i,2])
+        distance = manhattanDistance(carCoord, pickup)
+        closestDistance2 = size * 2
+        #Look for the unpicked package closest to the current package delivery point
+        for (j in 1:nrow(deliveries)) {
+          if (i != j && deliveries[j,5] == 0) {
+            delivery = c(x = deliveries[i,3], y = deliveries[i,4])
+            nextPickup = c(x = deliveries[j,1], y = deliveries[j,2])
+            distance2 = manhattanDistance(delivery, nextPickup)
+            if (distance2 < closestDistance2) {
+              closestDistance2 = distance2
+            }
+          }
+        }
+        
+        sum = weight * distance + (1 - weight) * closestDistance2
+        if (sum < closestDistance) {
+          closestDistance = sum
+          closest = i
+        }
+      }
+    }
+    goal["x"] = deliveries[closest,1]
+    goal["y"] = deliveries[closest,2]
+  }
+  
+  #return a list of coordinates to the goal 
+  return(goal)
+}
+
 getNextPackageOrDelivery <- function(car, deliveries, size) {
   #Check if the car has a package loaded
   #If yes, the goal is the package's delivery point
@@ -263,14 +321,14 @@ carAstar <- function(traffic, car, deliveries) {
   # goal = getNextPackageOrDelivery(car, deliveries)
   # car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
   
-  #Closest package + AStar
+  #(Closest package + closest distance to next package) + AStar
   #Adding the attributes in mem if necessary
   if (length(car$mem) == 0) {
     car$mem$lastGoal = 0
     car$mem$secondToLastGoal = 0
   }
   
-  goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
+  goal = getNextPackageOrDeliveryClosestNextPickup(car, deliveries, ncol(traffic[['vroads']]))
   car['nextMove'] = aStarMain(traffic, car, goal)
   
   return(car)
