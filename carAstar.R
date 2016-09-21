@@ -264,6 +264,12 @@ carAstar <- function(traffic, car, deliveries) {
   # car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
   
   #Closest package + AStar
+  #Adding the attributes in mem if necessary
+  if (length(car$mem) == 0) {
+    car$mem$lastGoal = 0
+    car$mem$secondToLastGoal = 0
+  }
+  
   goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
   car['nextMove'] = aStarMain(traffic, car, goal)
   
