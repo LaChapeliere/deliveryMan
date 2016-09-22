@@ -32,11 +32,15 @@ nextMove <- function(car, history, goal, traffic) {
   parentX = history[['parentXs']][neighbourX, neighbourY]
   parentY = history[['parentYs']][neighbourX, neighbourY]
   
-  while(parentX != car[['x']] || parentY != car[['y']]) {
-    neighbourX = parentX
-    neighbourY = parentY
-    parentX = history[['parentXs']][neighbourX, neighbourY]
-    parentY = history[['parentYs']][neighbourX, neighbourY]
+  if(goal['x'] == car['x'] && goal['y'] == car['y']){
+    nextMove = 5
+  }else{
+    while(parentX != car[['x']] || parentY != car[['y']]) {
+      neighbourX = parentX
+      neighbourY = parentY
+      parentX = history[['parentXs']][neighbourX, neighbourY]
+      parentY = history[['parentYs']][neighbourX, neighbourY]
+    }
   }
   
   #check if you move away from the goal
@@ -48,14 +52,12 @@ nextMove <- function(car, history, goal, traffic) {
   
   
   if(waits<2 && manhattanDistance(neighbour,goal)>manhattanDistance(carCoord,goal)){
-    print("Taking a break")
     nextMove = 5
     car$mem$wait = waits +1
   }
   else if(waits<2 && (mean(traffic[['vroads']]) + mean(traffic[['hroads']]) * 1.5) < parentScore){
     nextMove = 5
     car$mem$wait = waits + 1
-    print("High Cost")
   }
   else{
     
