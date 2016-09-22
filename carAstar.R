@@ -26,9 +26,9 @@ nextMoveVerticalThenHorizontal <- function(car, goal) {
   return(nextMove)
 }
 
-nextMove <- function(car, history, goal) {
-  neighbourX = goal['x']
-  neighbourY = goal['y']
+nextMove <- function(car, history, goal, traffic) {
+  neighbourX = goal[['x']]
+  neighbourY = goal[['y']]
   parentX = history[['parentXs']][neighbourX, neighbourY]
   parentY = history[['parentYs']][neighbourX, neighbourY]
   
@@ -39,25 +39,49 @@ nextMove <- function(car, history, goal) {
     parentY = history[['parentYs']][neighbourX, neighbourY]
   }
   
-  if (neighbourY < car['y']) {
-    nextMove = 2
+  #check if you move away from the goal
+  #need to get wait rounds to work, then add it to if
+  parentScore = history[['scores']][neighbourX, neighbourY]
+  neighbour = c(x=neighbourX, y=neighbourY)
+  carCoord = c(x = car[['x']],y = car[['y']])
+  waits = car$mem$wait
+  
+  
+  if(waits<2 && manhattanDistance(neighbour,goal)>manhattanDistance(carCoord,goal)){
+    print("Taking a break")
+    nextMove = 5
+    car$mem$wait = waits +1
   }
-  else if (neighbourY > car['y']) {
-    nextMove = 8
+  else if(waits<2 && (mean(traffic[['vroads']]) + mean(traffic[['hroads']]) * 1.5) < parentScore){
+    nextMove = 5
+    car$mem$wait = waits + 1
+    print("High Cost")
   }
-  else {
-    if (neighbourX < car['x']) {
-      nextMove = 4
+  else{
+    
+    if (neighbourY < car['y']) {
+      nextMove = 2
     }
-    else if (neighbourX > car['x']) {
-      nextMove = 6
+    else if (neighbourY > car['y']) {
+      nextMove = 8
     }
     else {
-      nextMove = 5
+      if (neighbourX < car['x']) {
+        nextMove = 4
+      }
+      else if (neighbourX > car['x']) {
+        nextMove = 6
+      }
+      else {
+        print("Shouldn't be here")
+        nextMove = 5
+      }
     }
+    car$mem$wait = 0
   }
+  car['nextMove'] = nextMove
   
-  return(nextMove)
+  return(car)
 }
 
 getNextPackageOrDelivery <- function(car, deliveries, size) {
@@ -225,7 +249,7 @@ aStarMain <- function(traffic, car, goal) {
     current = bestNode
   }
   
-  return(nextMove(car, history, goal))
+  return(nextMove(car,history,goal, traffic))
 }
 
 
@@ -258,10 +282,12 @@ carAstar <- function(traffic, car, deliveries) {
   #Choose next package or delivery
   # goal = getNextPackageOrDelivery(car, deliveries)
   # car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
+  if(length(car$mem)==0){
+    car$mem$wait = 0
+  }
   
   #Closest package + AStar
   goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
-  car['nextMove'] = aStarMain(traffic, car, goal)
-  
+  car = aStarMain(traffic, car, goal)
   return(car)
 }
