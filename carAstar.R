@@ -26,6 +26,74 @@ nextMoveVerticalThenHorizontal <- function(car, goal) {
   return(nextMove)
 }
 
+# <Waiting Optimization>
+#
+# nextMove <- function(car, history, goal, traffic) {
+#   neighbourX = goal[['x']]
+#   neighbourY = goal[['y']]
+#   parentX = history[['parentXs']][neighbourX, neighbourY]
+#   parentY = history[['parentYs']][neighbourX, neighbourY]
+#   
+#   if(goal['x'] == car['x'] && goal['y'] == car['y']){
+#     nextMove = 5
+#   }else{
+#     while(parentX != car[['x']] || parentY != car[['y']]) {
+#       neighbourX = parentX
+#       neighbourY = parentY
+#       parentX = history[['parentXs']][neighbourX, neighbourY]
+#       parentY = history[['parentYs']][neighbourX, neighbourY]
+#     }
+#   }
+#   
+#   parentScore = history[['scores']][neighbourX, neighbourY]
+#   neighbour = c(x=neighbourX, y=neighbourY)
+#   carCoord = c(x = car[['x']],y = car[['y']])
+#   waits = car$mem$wait
+#   
+#   #checks if you move away from the goal and if you've been waiting for more than a
+#   #certain amount of turns for a better path.
+#   if(waits<2 && manhattanDistance(neighbour,goal)>manhattanDistance(carCoord,goal)){
+#     nextMove = 5
+#     car$mem$wait = waits +1
+#   }
+#   #checks if the next move will be too costly and if you've been waiting for more than a
+#   #certain amount of turns for the costs to go down.
+#   else if(waits<2 && (mean(traffic[['vroads']]) + mean(traffic[['hroads']]) * 1.5) < parentScore){
+#     nextMove = 5
+#     car$mem$wait = waits + 1
+#   }
+#   else{
+#     
+#     if (neighbourY < car['y']) {
+#       nextMove = 2
+#     }
+#     else if (neighbourY > car['y']) {
+#       nextMove = 8
+#     }
+#     else {
+#       if (neighbourX < car['x']) {
+#         nextMove = 4
+#       }
+#       else if (neighbourX > car['x']) {
+#         nextMove = 6
+#       }
+#       else {
+#         print("Shouldn't be here")
+#         nextMove = 5
+#       }
+#     }
+#     car$mem$wait = 0
+#   }
+#   car['nextMove'] = nextMove
+#   
+#   return(car)
+# }
+#
+# </Waiting Optimization>
+
+
+
+
 nextMove <- function(car, history, goal) {
   neighbourX = goal['x']
   neighbourY = goal['y']
@@ -229,6 +297,10 @@ aStarMain <- function(traffic, car, goal) {
     current = bestNode
   }
   
+  # <Waiting Optimizations>
+  #return(nextMove(car,history,goal, traffic))
+  # </Waiting Optimizations>
+  
   return(nextMove(car, history, goal))
 }
 
@@ -262,6 +334,19 @@ carAstar <- function(traffic, car, deliveries) {
   #Choose next package or delivery
   # goal = getNextPackageOrDelivery(car, deliveries)
   # car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
+  
+  # <Waiting Optimizations>
+  #
+  # if(length(car$mem)==0){
+  #   car$mem$wait = 0
+  # }
+  # 
+  # #Closest package + AStar
+  # goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
+  # car = aStarMain(traffic, car, goal)
+  # return(car)
+  #
+  # </Waiting Optimizations>
   
   #Closest package + AStar
   goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
