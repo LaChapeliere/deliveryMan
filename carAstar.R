@@ -70,6 +70,136 @@ manhattanDistance <- function(A, B) {
 # </Waiting Optimization>
 
 
+getNextGoalOnBestPath <- function(car, deliveries) {
+  #Check if the car has a package loaded
+  #If yes, the goal is the package's delivery point
+  goal = c(x = 0, y = 0, package = 0)
+  
+  if (car['load'] > 0) {
+    #package loaded
+    package = car[['load']]
+    goal["x"] = deliveries[package,3]
+    goal["y"] = deliveries[package,4]
+    return(goal)
+  }
+  
+  #If no
+  #Brute force the possible paths to do all the pick-ups + deliveries
+  #Choose the best one
+  nbPackets = nrow(deliveries)
+  leftPackets = c()
+  nbLeftPackets = 0
+  for (i in 1:nbPackets) {
+    #List the packets that have not picked-up yet
+    if (deliveries[i,5] == 0) {
+      nbLeftPackets = nbLeftPackets + 1
+      leftPackets[nbLeftPackets] <- i
+    }
+  }
+  
+  #Gets the cost from each delivery to each packet
+  costsPacketToPacket = matrix(nrow = nbPackets, ncol = nbPackets)
+  for (i in 1:nbPackets) {
+    for (j in 1:nbPackets) {
+      if (j >= i) {
+        break
+      }
+      if (i == j) {
+        costsPacketToPacket[i,j] = 100000000
+      }
+      else {
+        distItoJ = manhattanDistance(c(x = deliveries[j,1], y = deliveries[j,2]), c(x = deliveries[i,3], y = deliveries[i,4]))
+        costsPacketToPacket[i,j] = distItoJ
+        distJtoI = manhattanDistance(c(x = deliveries[i,1], y = deliveries[i,2]), c(x = deliveries[j,3], y = deliveries[j,4]))
+        costsPacketToPacket[j,i] = distJtoI
+      }
+    }
+  }
+  #No need to calculate the cost from each pick-up to its delivery because it is a constant
+  
+  #It's ok to do loops because there is no negative weight
+  #Generates all permutations of pick-up order for packets that have not been picked-up yet
+  permutations = iterpc(nbLeftPackets, nbLeftPackets, ordered = TRUE)
+  best = 100000000
+  bestFirst = -1
+  for (index in 1:nrow(getall(permutations))) {
+    permut = getall(permutations)[index,]
+    carCoord = c(x = car[['x']],y = car[['y']])
+    firstPickup = c(x = deliveries[leftPackets[permut[1]],1], y = deliveries[leftPackets[permut[1]],2])
+    score = manhattanDistance(carCoord, firstPickup)
+    for (i in 2:nbLeftPackets) {
+      score = score + costsPacketToPacket[leftPackets[permut[i-1]],leftPackets[permut[i]]]
+    }
+    if (score < best) {
+      best = score
+      bestFirst = leftPackets[permut[i]]
+    }
+  }
+  
+  goal["x"] = deliveries[bestFirst,1]
+  goal["y"] = deliveries[bestFirst,2]
+  goal["package"] = bestFirst
+  return(goal)
+}
+
+getNextPackageOrDeliveryClosestNextPickup <- function(car, deliveries, size) {
+  #Check if the car has a package loaded
+  #If yes, the goal is the package's delivery point
+  #If not, the goal is the unpicked package with the smallest sum of
+  #distance from the car to it
+  #and distance from its delivery point and the unpicked package closest to this delivery point.
+  
+  #weight to give priority to one distance over the other
+  #1 means only the first distance is taken into account
+  #0 means only the second one is taken into account
+  weight = 0.3
+  
+  goal = c(x = 0, y = 0)
+  
+  if (car['load'] > 0) {
+    #package loaded
+    package = car[['load']]
+    goal["x"] = deliveries[package,3]
+    goal["y"] = deliveries[package,4]
+  }
+  else {
+    #For each unpicked package, compute the distance between it and the car
+    closestDistance = size * 4
+    closest = 0
+    carCoord = c(x = car[['x']],y = car[['y']])
+    for (i in 1:nrow(deliveries)) {
+      if (deliveries[i,5] == 0) {
+        #If the package has not been picked up yet
+        pickup = c(x = deliveries[i,1], y = deliveries[i,2])
+        distance = manhattanDistance(carCoord, pickup)
+        closestDistance2 = size * 2
+        #Look for the unpicked package closest to the current package delivery point
+        for (j in 1:nrow(deliveries)) {
+          if (i != j && deliveries[j,5] == 0) {
+            delivery = c(x = deliveries[i,3], y = deliveries[i,4])
+            nextPickup = c(x = deliveries[j,1], y = deliveries[j,2])
+            distance2 = manhattanDistance(delivery, nextPickup)
+            if (distance2 < closestDistance2) {
+              closestDistance2 = distance2
+            }
+          }
+        }
+        
+        sum = weight * distance + (1 - weight) * closestDistance2
+        if (sum < closestDistance) {
+          closestDistance = sum
+          closest = i
+        }
+      }
+    }
+    goal["x"] = deliveries[closest,1]
+    goal["y"] = deliveries[closest,2]
+  }
+  
+  #return a list of coordinates to the goal 
+  return(goal)
+}
+
 
 
 nextMove <- function(car, history, goal) {
@@ -310,6 +440,57 @@ carAstar <- function(traffic, car, deliveries) {
   # return(car)
   #
   # </Waiting Optimizations>
+  
+  
+  # <Best Path>
+  # 
+  # if (length(car$mem) == 0) {
+  #   car$mem$lastGoal = 0
+  #   car$mem$secondToLastGoal = 0
+  # }
+  # if (nrow(deliveries) <= 5) {
+  #   goal = getNextGoalOnBestPath(car, deliveries)
+  #   if (length(car$mem) == 0) {
+  #     car$mem$lastGoal = 0
+  #     car$mem$secondToLastGoal = 0
+  #   }
+  #   lastGoal = car$mem$lastGoal
+  #   secondToLastGoal = car$mem$secondToLastGoal
+  #   #If stuck in a loop, keep the same goal as before
+  #   if (lastGoal != secondToLastGoal && secondToLastGoal == goal["package"]) {
+  #     goal["x"] = deliveries[lastGoal,1]
+  #     goal["y"] = deliveries[lastGoal,2]
+  #     goal["package"] = lastGoal
+  #   }
+  #   car$mem$secondToLastGoal = lastGoal
+  #   car$mem$lastGoal = goal["package"]
+  # }
+  # else {
+  #   goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
+  # }
+  # car['nextMove'] = aStarMain(traffic, car, goal)
+  # 
+  # return(car)
+  #
+  # </Best Path>
+  
+  
+  
+  # <Closest Next Pickup>
+  # 
+  # if (length(car$mem) == 0) {
+  #   car$mem$lastGoal = 0
+  #   car$mem$secondToLastGoal = 0
+  # }
+  # 
+  # goal = getNextPackageOrDeliveryClosestNextPickup(car, deliveries, ncol(traffic[['vroads']]))
+  # car['nextMove'] = aStarMain(traffic, car, goal)
+  #
+  #return(car)
+  #
+  # </Closest Next Pickup>
+  
+  
   
   #Closest package + AStar
   goal = getNextPackageOrDelivery(car, deliveries, ncol(traffic[['vroads']]))
