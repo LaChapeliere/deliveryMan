@@ -4,28 +4,6 @@ manhattanDistance <- function(A, B) {
   return(abs(A['x'] - B['x']) + abs(A['y'] - B['y']))
 }
 
-nextMoveVerticalThenHorizontal <- function(car, goal) {
-  if (goal['y'] < car['y']) {
-    nextMove = 2
-  }
-  else if (goal['y'] > car['y']) {
-    nextMove = 8
-  }
-  else {
-    if (goal['x'] < car['x']) {
-      nextMove = 4
-    }
-    else if (goal['x'] > car['x']) {
-      nextMove = 6
-    }
-    else {
-      nextMove = 5
-    }
-  }
-  
-  return(nextMove)
-}
-
 # <Waiting Optimization>
 #
 # nextMove <- function(car, history, goal, traffic) {
@@ -213,7 +191,6 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
       
       # -check if it has been visited
       if (history[['scores']][x,y] == 0) {
-        #print("Never visited")
         #If the node has never been visited, add it to the frontier
         neighbour = c(x = x, y = y)
         history[['scores']][x,y] = computeAStarScore(traffic, current, neighbour, goal)
@@ -221,12 +198,10 @@ addNeighboursToFrontier <- function(traffic, current, history, goal) {
         history[['parentYs']][x,y] = current['y']
       }
       else if (history[['scores']][x,y] == -1) {
-        #print("Already visited")
         #If the node has already been explored, go to the next neighbour
         next()
       }
       else {
-        #print("Already in frontier")
         #If the node is already in the frontier,
         #only replace the current occurence of the node if
         #the new score is better
@@ -322,18 +297,6 @@ carAstar <- function(traffic, car, deliveries) {
   #(0 is not picked up, 1 is picked up but not delivered, 2 is delivered)
   
   #Function should return the car object with the nextMove specified
-  
-  possibleOutputs = c(2, 4, 6, 8, 5)
-  
-  #RANDOM WALK
-  # possibleOutputs
-  # car['nextMove'] = sample(possibleOutputs, 1)
-  # car['nextMove']
-  
-  #Closest package, first vertical than horizontal
-  #Choose next package or delivery
-  # goal = getNextPackageOrDelivery(car, deliveries)
-  # car['nextMove'] = nextMoveVerticalThenHorizontal(car, goal)
   
   # <Waiting Optimizations>
   #
