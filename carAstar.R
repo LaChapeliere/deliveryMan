@@ -43,18 +43,19 @@ nextMove <- function(car, history, goal, traffic) {
     }
   }
   
-  #check if you move away from the goal
-  #need to get wait rounds to work, then add it to if
   parentScore = history[['scores']][neighbourX, neighbourY]
   neighbour = c(x=neighbourX, y=neighbourY)
   carCoord = c(x = car[['x']],y = car[['y']])
   waits = car$mem$wait
   
-  
+  #checks if you move away from the goal and if you've been waiting for more than a
+  #certain amount of turns for a better path.
   if(waits<2 && manhattanDistance(neighbour,goal)>manhattanDistance(carCoord,goal)){
     nextMove = 5
     car$mem$wait = waits +1
   }
+  #checks if the next move will be too costly and if you've been waiting for more than a
+  #certain amount of turns for the costs to go down.
   else if(waits<2 && (mean(traffic[['vroads']]) + mean(traffic[['hroads']]) * 1.5) < parentScore){
     nextMove = 5
     car$mem$wait = waits + 1
